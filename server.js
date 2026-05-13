@@ -7,10 +7,10 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Verbinding met MongoDB Atlas
+// MongoDB Verbinding
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('Database verbonden!'))
-  .catch(err => console.error('Database fout:', err));
+  .then(() => console.log('Encrypto Database Succesvol Gekoppeld!'))
+  .catch(err => console.error('Database Verbindingsfout:', err));
 
 // Database Modellen
 const User = mongoose.model('User', new mongoose.Schema({ username: String, isOnline: Boolean }));
@@ -20,119 +20,133 @@ const Message = mongoose.model('Message', new mongoose.Schema({ room: String, se
 app.get('/', (req, res) => {
   res.send(`
     <!DOCTYPE html>
-    <html>
+    <html lang="nl">
     <head>
-      <title>Josh-chatwebsite</title>
+      <meta charset="UTF-8">
+      <title>Encrypto Chat</title>
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #111b21; color: #e9edef; height: 100vh; display: flex; justify-content: center; align-items: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #0c1317; color: #e9edef; height: 100vh; display: flex; justify-content: center; align-items: center; }
         
         /* INLOGSCHERM */
-        #login-screen { background: #222e35; padding: 30px; border-radius: 10px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        #login-screen h2 { margin-bottom: 20px; color: #00a884; }
-        input { width: 100%; padding: 12px; margin: 10px 0; background: #2a3942; border: 1px solid #3b4a54; border-radius: 6px; color: #fff; font-size: 16px; }
-        input:focus { outline: none; border-color: #00a884; }
-        button { width: 100%; padding: 12px; background: #00a884; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
-        button:hover { background: #008f72; }
+        #login-screen { background: #111b21; padding: 40px; border-radius: 12px; width: 100%; max-width: 420px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #222e35; }
+        #login-screen h2 { margin-bottom: 10px; color: #00a884; font-size: 28px; font-weight: 600; }
+        #login-screen p { color: #8696a0; font-size: 14px; margin-bottom: 25px; }
+        input { width: 100%; padding: 14px; margin: 10px 0; background: #2a3942; border: 1px solid #3b4a54; border-radius: 8px; color: #fff; font-size: 16px; transition: 0.2s; }
+        input:focus { outline: none; border-color: #00a884; background: #32444f; }
+        button { width: 100%; padding: 14px; background: #00a884; color: #111b21; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #00c298; transform: translateY(-1px); }
 
-        /* MAIN CHAT STRUKTUUR */
+        /* HOOFD INTERFACE */
         #chat-screen { display: none; width: 100vw; height: 100vh; }
-        .app-container { display: flex; width: 100%; height: 100%; }
+        .app-container { display: flex; width: 100%; height: 100%; background: #111b21; }
 
-        /* LINKERKOLOM (SIDEBAR) */
-        .sidebar { width: 30%; max-width: 350px; min-width: 260px; background: #111b21; border-right: 1px solid #222e35; display: flex; flex-direction: column; }
-        .sidebar-header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222e35; }
-        .sidebar-header h3 { font-size: 18px; color: #e9edef; }
-        
-        /* PLUS KNOP */
-        .plus-btn { background: #00a884; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-weight: bold; }
-        .plus-btn:hover { background: #008f72; }
-        
-        .online-status-bar { padding: 10px 15px; background: #182229; font-size: 13px; color: #8696a0; border-bottom: 1px solid #222e35; }
-        .group-list { flex: 1; overflow-y: auto; }
-        .group-item { padding: 15px; border-bottom: 1px solid #222e35; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        /* SIDEBAR (LINKS) */
+        .sidebar { width: 30%; max-width: 400px; min-width: 300px; background: #111b21; border-right: 1px solid #222e35; display: flex; flex-direction: column; }
+        .sidebar-header { background: #202c33; padding: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h3 { font-size: 20px; font-weight: 600; color: #e9edef; }
+        .plus-btn { background: #00a884; color: #111b21; width: 36px; height: 36px; border-radius: 50%; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-weight: bold; transition: 0.2s; }
+        .plus-btn:hover { background: #00c298; rotate: 90deg; }
+        .online-status-bar { padding: 12px 16px; background: #182229; font-size: 14px; color: #8696a0; border-bottom: 1px solid #222e35; display: flex; align-items: center; gap: 8px; }
+        .status-dot { width: 8px; height: 8px; background: #00e676; border-radius: 50%; display: inline-block; }
+        .group-list { flex: 1; overflow-y: auto; background: #111b21; }
+        .group-item { padding: 20px 16px; border-bottom: 1px solid #222e35; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; gap: 4px; }
         .group-item:hover { background: #202c33; }
         .group-item.active { background: #2a3942; border-left: 4px solid #00a884; }
+        .group-item b { font-size: 16px; color: #e9edef; }
+        .group-item span { font-size: 12px; color: #00a884; font-weight: 500; }
 
-        /* RECHTERKOLOM (CHAT VENSTER) */
-        .chat-area { flex: 1; background: #0b141a; display: flex; flex-direction: column; position: relative; }
-        .chat-header { background: #202c33; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #222e35; }
-        .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        /* CHAT VENSTER (RECHTS) */
+        .chat-area { flex: 1; background: #0b141a; display: flex; flex-direction: column; }
+        .chat-header { background: #202c33; padding: 16px; display: flex; align-items: center; border-bottom: 1px solid #222e35; height: 69px; }
+        .chat-header h3 { font-size: 17px; font-weight: 600; color: #e9edef; }
         
-        /* BERICHTEN BLUBBERS */
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 15px; line-height: 1.4; word-break: break-word; position: relative; }
-        .message.sent { background: #005c4b; align-self: flex-end; color: #e9edef; }
-        .message.received { background: #202c33; align-self: flex-start; color: #e9edef; }
-        .message .sender { font-size: 12px; color: #8696a0; font-weight: bold; margin-bottom: 3px; display: block; }
+        /* BERICHTENLIJST */
+        .messages-container { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .no-chat-placeholder { text-align: center; color: #8696a0; margin: auto; font-size: 16px; max-width: 320px; line-height: 1.5; }
         
-        /* INPUT BALK ONDERAAN */
-        .chat-input-bar { background: #202c33; padding: 15px; display: flex; align-items: center; gap: 10px; }
-        .chat-input-bar input { margin: 0; background: #2a3942; border: none; flex: 1; }
+        /* PROFESSIONELE BERICHT BLUBBERS */
+        .message { max-width: 60%; padding: 10px 14px; border-radius: 8px; font-size: 15px; line-height: 1.4; word-break: break-word; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+        .message.sent { background: #005c4b; align-self: flex-end; color: #e9edef; border-top-right-radius: 0; }
+        .message.received { background: #202c33; align-self: flex-start; color: #e9edef; border-top-left-radius: 0; }
+        .message .sender { font-size: 12px; color: #00a884; font-weight: 600; margin-bottom: 4px; display: block; }
+        
+        /* AFGESCHERMDE INPUT BALK */
+        .chat-input-bar { background: #202c33; padding: 12px 20px; display: none; align-items: center; gap: 12px; }
+        .chat-input-bar input { margin: 0; background: #2a3942; border: none; flex: 1; padding: 12px 16px; }
 
-        /* POPUP VENSTER */
-        #group-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
-        .modal-content { background: #222e35; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
-        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #8696a0; }
-        .modal-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 10px; background: #2a3942; border: none; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; }
-        .tab-btn.active { background: #00a884; }
+        /* POPUP DIALOG */
+        #group-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: #222e35; padding: 30px; border-radius: 14px; width: 90%; max-width: 420px; position: relative; border: 1px solid #3b4a54; }
+        .close-modal { position: absolute; top: 14px; right: 20px; font-size: 28px; cursor: pointer; color: #8696a0; transition: 0.2s; }
+        .close-modal:hover { color: #fff; }
+        .modal-tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { flex: 1; padding: 12px; background: #2a3942; border: none; color: #8696a0; cursor: pointer; border-radius: 6px; font-weight: 600; font-size: 15px; transition: 0.2s; }
+        .tab-btn.active { background: #00a884; color: #111b21; }
       </style>
     </head>
     <body>
 
       <!-- INLOGSCHERM -->
       <div id="login-screen">
-        <h2>Josh-chatwebsite</h2>
-        <input id="username" type="text" placeholder="Vul je naam in...">
-        <button onclick="login()">Starten</button>
+        <h2>Encrypto Chat</h2>
+        <p>Veilig, afgeschermd en realtime chatten</p>
+        <input id="username" type="text" placeholder="Voer uw gebruikersnaam in..." onkeypress="if(event.key==='Enter') login()">
+        <button onclick="login()">Verbinding Maken</button>
       </div>
 
-      <!-- MAIN APP INTERFACE -->
+      <!-- MAIN INTERFACE -->
       <div id="chat-screen">
         <div class="app-container">
           
           <!-- SIDEBAR LINKS -->
           <div class="sidebar">
             <div class="sidebar-header">
-              <h3 id="my-name">Mijn Chat</h3>
+              <h3>Encrypto Chat</h3>
               <button class="plus-btn" onclick="openModal()">+</button>
             </div>
-            <div class="online-status-bar" id="user-list">Online spelers: 0</div>
-            <div class="group-list" id="rooms-list"></div>
+            <div class="online-status-bar">
+              <span class="status-dot"></span>
+              <span id="user-count">Netwerkstatus laden...</span>
+            </div>
+            <div class="group-list" id="rooms-list">
+              <!-- Gekoppelde kamers verschijnen hier -->
+            </div>
           </div>
 
-          <!-- CHAT SCHERM RECHTS -->
+          <!-- CHAT VENSTER RECHTS -->
           <div class="chat-area">
             <div class="chat-header">
-              <h3 id="current-group-title">Geen actieve groep</h3>
+              <h3 id="current-group-title">Geen actieve beveiligde sessie</h3>
             </div>
             
             <div class="messages-container" id="messages">
-              <div id="placeholder-text" style="text-align:center; color:#8696a0; margin-top:200px;">
-                Klik op de <b>+ knop</b> linksboven om een groep te maken of te joinen!
+              <div class="no-chat-placeholder" id="main-placeholder">
+                Klik op de <b>+ knop</b> linksboven om een chatgroep aan te maken of te joinen met een wachtwoordbeveiliging.
               </div>
             </div>
             
-            <div class="chat-input-bar">
-              <input id="msg-text" type="text" placeholder="Typ een bericht..." onkeypress="checkEnter(event)">
-              <button onclick="sendMessage()" style="width:auto; padding: 12px 25px;">Stuur</button>
+            <!-- VERSTUUR BALK (Standaard onzichtbaar tot kamer-auth) -->
+            <div class="chat-input-bar" id="chat-input-wrapper">
+              <input id="msg-text" type="text" placeholder="Typ een beveiligd bericht..." onkeypress="checkEnter(event)">
+              <button onclick="sendMessage()" style="width:auto; padding: 12px 30px;">Stuur</button>
             </div>
           </div>
 
         </div>
       </div>
 
-      <!-- POPUP FORMULIER -->
+      <!-- POPUP MODAL -->
       <div id="group-modal">
         <div class="modal-content">
           <span class="close-modal" onclick="closeModal()">&times;</span>
           <div class="modal-tabs">
-            <button class="tab-btn active" id="tab-join" onclick="switchTab('join')">Groep Joinen</button>
-            <button class="tab-btn" id="tab-create" onclick="switchTab('create')">Nieuwe Groep</button>
+            <button class="tab-btn active" id="tab-join" onclick="switchTab('join')">Sessie Joinen</button>
+            <button class="tab-btn" id="tab-create" onclick="switchTab('create')">Nieuwe Sessie</button>
           </div>
-          <input id="modal-group-name" type="text" placeholder="Groepsnaam">
-          <input id="modal-group-pin" type="password" placeholder="Wachtwoord / PIN">
-          <button id="modal-submit-btn" onclick="handleGroupSubmit()">Join Groep</button>
+          <input id="modal-group-name" type="text" placeholder="Naam van de chatgroep">
+          <input id="modal-group-pin" type="password" placeholder="Groepswachtwoord / PIN">
+          <button id="modal-submit-btn" onclick="handleGroupSubmit()">Deelnemen aan groep</button>
         </div>
       </div>
 
@@ -146,11 +160,10 @@ app.get('/', (req, res) => {
 
         function login() {
           myUsername = document.getElementById('username').value.trim();
-          if(!myUsername) return alert('Vul een naam in');
+          if(!myUsername) return alert('Voer een geldige naam in.');
           socket.emit('user-online', myUsername);
           document.getElementById('login-screen').style.display = 'none';
           document.getElementById('chat-screen').style.display = 'block';
-          document.getElementById('my-name').innerText = myUsername;
         }
 
         function openModal() { document.getElementById('group-modal').style.display = 'flex'; }
@@ -160,13 +173,13 @@ app.get('/', (req, res) => {
           currentTab = type;
           document.getElementById('tab-join').classList.toggle('active', type === 'join');
           document.getElementById('tab-create').classList.toggle('active', type === 'create');
-          document.getElementById('modal-submit-btn').innerText = type === 'join' ? 'Join Groep' : 'Maak Groep';
+          document.getElementById('modal-submit-btn').innerText = type === 'join' ? 'Deelnemen aan groep' : 'Groep Genereren';
         }
 
         function handleGroupSubmit() {
           const name = document.getElementById('modal-group-name').value.trim();
           const pin = document.getElementById('modal-group-pin').value.trim();
-          if(!name || !pin) return alert('Vul alle velden in');
+          if(!name || !pin) return alert('Vul alle beveiligingsvelden in.');
 
           if(currentTab === 'create') {
             socket.emit('create-group', { name, pin });
@@ -181,24 +194,23 @@ app.get('/', (req, res) => {
         function selectRoom(roomName) {
           currentRoom = roomName;
           
-          // Verwijder placeholder tekst
-          const placeholder = document.getElementById('placeholder-text');
-          if (placeholder) placeholder.remove();
-
-          document.getElementById('current-group-title').innerText = "Groep: " + roomName;
+          // Toon invoervelden pas NADAT een kamer actief is gekozen/geautoriseerd
+          document.getElementById('chat-input-wrapper').style.display = 'flex';
+          document.getElementById('current-group-title').innerText = "Beveiligde Lijn: " + roomName;
           
-          // Update actieve kleur in sidebar
           document.querySelectorAll('.group-item').forEach(item => {
             item.classList.toggle('active', item.dataset.name === roomName);
           });
 
-          // Vraag direct geschiedenis op aan de server
+          // Haal database-geschiedenis op voor deze specifieke kamer
           socket.emit('get-messages', roomName);
         }
 
         function sendMessage() {
           const text = document.getElementById('msg-text').value.trim();
           if(!text || !currentRoom) return;
+          
+          // Verstuur live naar server
           socket.emit('send-message', { room: currentRoom, sender: myUsername, text });
           document.getElementById('msg-text').value = '';
         }
@@ -210,7 +222,6 @@ app.get('/', (req, res) => {
             joinedRooms.push(roomName);
             updateRoomsSidebar();
           }
-          // Spring DIRECT in deze chatkamer open
           selectRoom(roomName);
         });
 
@@ -219,7 +230,7 @@ app.get('/', (req, res) => {
           joinedRooms.forEach(room => {
             html += \`<div class="group-item" data-name="\${room}" onclick="selectRoom('\${room}')">
               <b># \${room}</b>
-              <span style="font-size:11px; color:#00a884;">online</span>
+              <span>Verbinding actief</span>
             </div>\`;
           });
           document.getElementById('rooms-list').innerHTML = html;
@@ -234,17 +245,16 @@ app.get('/', (req, res) => {
             <div class="message \${isSentByMe ? 'sent' : 'received'}">
               \${!isSentByMe ? \`<span class="sender">\${data.sender}</span>\` : ''}
               \${data.text}
-            </div>
-          \`;
+            </div>\`;
           container.scrollTop = container.scrollHeight;
         });
 
         socket.on('chat-history', (messages) => {
           const container = document.getElementById('messages');
-          container.innerHTML = ''; // Maak leeg voor nieuwe kamer
+          container.innerHTML = ''; 
           
           if(messages.length === 0) {
-            container.innerHTML = '<div style="text-align:center; color:#8696a0; margin-top:20px;">Begin het gesprek! Typ hieronder iets...</div>';
+            container.innerHTML = '<div class="no-chat-placeholder">Einde van encryptie-lijn. Geen eerdere berichten. Start het gesprek hieronder...</div>';
           } else {
             messages.forEach(msg => {
               const isSentByMe = msg.sender === myUsername;
@@ -252,8 +262,7 @@ app.get('/', (req, res) => {
                 <div class="message \${isSentByMe ? 'sent' : 'received'}">
                   \${!isSentByMe ? \`<span class="sender">\${msg.sender}</span>\` : ''}
                   \${msg.text}
-                </div>
-              \`;
+                </div>\`;
             });
           }
           container.scrollTop = container.scrollHeight;
@@ -261,7 +270,7 @@ app.get('/', (req, res) => {
 
         socket.on('update-users', (users) => {
           let onlineCount = users.filter(u => u.isOnline).length;
-          document.getElementById('user-list').innerText = \`Online spelers: \${onlineCount}\`;
+          document.getElementById('user-count').innerText = \`Gebruikers online in netwerk: \${onlineCount}\`;
         });
 
         socket.on('err', (msg) => alert(msg));
@@ -271,7 +280,7 @@ app.get('/', (req, res) => {
   `);
 });
 
-// Server-side Realtime Verwerking
+// Socket Realtime Communicatie
 io.on('connection', (socket) => {
   
   socket.on('user-online', async (username) => {
@@ -283,7 +292,7 @@ io.on('connection', (socket) => {
 
   socket.on('create-group', async ({ name, pin }) => {
     const exists = await Group.findOne({ name });
-    if (exists) return socket.emit('err', 'Groep bestaat al!');
+    if (exists) return socket.emit('err', 'Sessie-naam is al bezet door een andere encryptielijn.');
     
     const newGroup = new Group({ name, pin });
     await newGroup.save();
@@ -294,22 +303,20 @@ io.on('connection', (socket) => {
 
   socket.on('join-group', async ({ name, pin }) => {
     const group = await Group.findOne({ name, pin });
-    if (!group) return socket.emit('err', 'Onjuiste groepsnaam of wachtwoord!');
+    if (!group) return socket.emit('err', 'Toegang geweigerd: Onjuiste groepsnaam of pincode.');
     
     socket.join(name);
     socket.emit('group-joined', name);
   });
 
   socket.on('get-messages', async (room) => {
-    // Haal alle oude berichten op uit MongoDB gesorteerd op tijd
     const history = await Message.find({ room }).sort({ timestamp: 1 });
     socket.emit('chat-history', history);
   });
 
   socket.on('send-message', async ({ room, sender, text }) => {
-    // Sla het bericht op in de database zodat latere joiners het zien
     const msg = new Message({ room, sender, text });
-    await msg.save();
+    await msg.save(); // Sla permanent op in MongoDB Atlas
     
     io.to(room).emit('receive-message', { room, sender, text });
   });
@@ -324,4 +331,4 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('Server draait!'));
+server.listen(PORT, () => console.log('Encrypto Server Actief.'));
