@@ -7,8 +7,12 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-mongoose.connect(process.env.MONGO_URI).then(() => console.log('Database verbonden!'));
+// Verbinding met MongoDB Atlas
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log('Database verbonden!'))
+  .catch(err => console.error('Database fout:', err));
 
+// Database Modellen
 const User = mongoose.model('User', new mongoose.Schema({ username: String, isOnline: Boolean }));
 const Group = mongoose.model('Group', new mongoose.Schema({ name: String, pin: String }));
 const Message = mongoose.model('Message', new mongoose.Schema({ room: String, sender: String, text: String, timestamp: { type: Date, default: Date.now } }));
@@ -31,7 +35,7 @@ app.get('/', (req, res) => {
         button { width: 100%; padding: 12px; background: #00a884; color: #fff; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         button:hover { background: #008f72; }
 
-        /* WHATSAPP INTERFACE */
+        /* MAIN CHAT STRUKTUUR */
         #chat-screen { display: none; width: 100vw; height: 100vh; }
         .app-container { display: flex; width: 100%; height: 100%; }
 
@@ -39,38 +43,39 @@ app.get('/', (req, res) => {
         .sidebar { width: 30%; max-width: 350px; min-width: 260px; background: #111b21; border-right: 1px solid #222e35; display: flex; flex-direction: column; }
         .sidebar-header { background: #202c33; padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #222e35; }
         .sidebar-header h3 { font-size: 18px; color: #e9edef; }
-        .plus-btn { background: #202c33; color: #00a884; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #2a3942; }
-        .plus-btn:hover { background: #2a3942; }
+        
+        /* PLUS KNOP */
+        .plus-btn { background: #00a884; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 24px; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-weight: bold; }
+        .plus-btn:hover { background: #008f72; }
+        
+        .online-status-bar { padding: 10px 15px; background: #182229; font-size: 13px; color: #8696a0; border-bottom: 1px solid #222e35; }
         .group-list { flex: 1; overflow-y: auto; }
         .group-item { padding: 15px; border-bottom: 1px solid #222e35; cursor: pointer; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; }
         .group-item:hover { background: #202c33; }
-        .group-item.active { background: #2a3942; }
+        .group-item.active { background: #2a3942; border-left: 4px solid #00a884; }
 
-        /* RECHTERKOLOM (CHAT AREA) */
+        /* RECHTERKOLOM (CHAT VENSTER) */
         .chat-area { flex: 1; background: #0b141a; display: flex; flex-direction: column; position: relative; }
-        .chat-header { background: #202c33; padding: 15px; display: none; align-items: center; border-bottom: 1px solid #222e35; }
-        .chat-header h3 { margin-left: 10px; }
+        .chat-header { background: #202c33; padding: 15px; display: flex; align-items: center; border-bottom: 1px solid #222e35; }
         .messages-container { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
         
-        /* BERICHTEN STYLING */
-        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 15px; line-height: 1.4; word-break: break-word; }
+        /* BERICHTEN BLUBBERS */
+        .message { max-width: 65%; padding: 8px 12px; border-radius: 8px; font-size: 15px; line-height: 1.4; word-break: break-word; position: relative; }
         .message.sent { background: #005c4b; align-self: flex-end; color: #e9edef; }
         .message.received { background: #202c33; align-self: flex-start; color: #e9edef; }
         .message .sender { font-size: 12px; color: #8696a0; font-weight: bold; margin-bottom: 3px; display: block; }
         
-        .chat-input-bar { background: #202c33; padding: 10px; display: none; align-items: center; gap: 10px; }
-        .chat-input-bar input { margin: 0; background: #2a3942; border: none; }
+        /* INPUT BALK ONDERAAN */
+        .chat-input-bar { background: #202c33; padding: 15px; display: flex; align-items: center; gap: 10px; }
+        .chat-input-bar input { margin: 0; background: #2a3942; border: none; flex: 1; }
 
-        /* POPUP MODAL VOOR PLUS-KNOP */
+        /* POPUP VENSTER */
         #group-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); justify-content: center; align-items: center; z-index: 100; }
         .modal-content { background: #222e35; padding: 25px; border-radius: 10px; width: 90%; max-width: 400px; position: relative; }
-        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: #8696a0; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 24px; cursor: pointer; color: #8696a0; }
         .modal-tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab-btn { flex: 1; padding: 8px; background: #2a3942; border: none; color: #fff; cursor: pointer; border-radius: 4px; }
+        .tab-btn { flex: 1; padding: 10px; background: #2a3942; border: none; color: #fff; cursor: pointer; border-radius: 4px; font-weight: bold; }
         .tab-btn.active { background: #00a884; }
-        
-        /* ONLINE STATUS SPELERS */
-        .online-status-bar { padding: 10px 15px; background: #182229; font-size: 13px; color: #8696a0; border-bottom: 1px solid #222e35; }
       </style>
     </head>
     <body>
@@ -78,33 +83,37 @@ app.get('/', (req, res) => {
       <!-- INLOGSCHERM -->
       <div id="login-screen">
         <h2>Josh-chatwebsite</h2>
-        <input id="username" type="text" placeholder="Kies een gebruikersnaam...">
-        <button onclick="login()">Open WhatsApp-Chat</button>
+        <input id="username" type="text" placeholder="Vul je naam in...">
+        <button onclick="login()">Starten</button>
       </div>
 
       <!-- MAIN APP INTERFACE -->
       <div id="chat-screen">
         <div class="app-container">
           
-          <!-- SIDEBAR -->
+          <!-- SIDEBAR LINKS -->
           <div class="sidebar">
             <div class="sidebar-header">
               <h3 id="my-name">Mijn Chat</h3>
-              <div class="plus-btn" onclick="openModal()">+</div>
+              <button class="plus-btn" onclick="openModal()">+</button>
             </div>
             <div class="online-status-bar" id="user-list">Online spelers: 0</div>
             <div class="group-list" id="rooms-list"></div>
           </div>
 
-          <!-- CHAT WINDOW -->
-          <div class="chat-area" id="chat-area">
-            <div class="chat-header" id="chat-header">
-              <h3 id="current-group-title">Selecteer een groep</h3>
+          <!-- CHAT SCHERM RECHTS -->
+          <div class="chat-area">
+            <div class="chat-header">
+              <h3 id="current-group-title">Geen actieve groep</h3>
             </div>
+            
             <div class="messages-container" id="messages">
-              <div style="text-align:center; color:#8696a0; margin-top:200px;">Klik op het plusje om een groep te maken of te joinen!</div>
+              <div id="placeholder-text" style="text-align:center; color:#8696a0; margin-top:200px;">
+                Klik op de <b>+ knop</b> linksboven om een groep te maken of te joinen!
+              </div>
             </div>
-            <div class="chat-input-bar" id="input-bar">
+            
+            <div class="chat-input-bar">
               <input id="msg-text" type="text" placeholder="Typ een bericht..." onkeypress="checkEnter(event)">
               <button onclick="sendMessage()" style="width:auto; padding: 12px 25px;">Stuur</button>
             </div>
@@ -113,7 +122,7 @@ app.get('/', (req, res) => {
         </div>
       </div>
 
-      <!-- POPUP DIALOG VOOR GROEPEN -->
+      <!-- POPUP FORMULIER -->
       <div id="group-modal">
         <div class="modal-content">
           <span class="close-modal" onclick="closeModal()">&times;</span>
@@ -171,14 +180,19 @@ app.get('/', (req, res) => {
 
         function selectRoom(roomName) {
           currentRoom = roomName;
-          document.getElementById('chat-header').style.display = 'flex';
-          document.getElementById('input-bar').style.display = 'flex';
-          document.getElementById('current-group-title').innerText = roomName;
           
+          // Verwijder placeholder tekst
+          const placeholder = document.getElementById('placeholder-text');
+          if (placeholder) placeholder.remove();
+
+          document.getElementById('current-group-title').innerText = "Groep: " + roomName;
+          
+          // Update actieve kleur in sidebar
           document.querySelectorAll('.group-item').forEach(item => {
             item.classList.toggle('active', item.dataset.name === roomName);
           });
 
+          // Vraag direct geschiedenis op aan de server
           socket.emit('get-messages', roomName);
         }
 
@@ -196,6 +210,7 @@ app.get('/', (req, res) => {
             joinedRooms.push(roomName);
             updateRoomsSidebar();
           }
+          // Spring DIRECT in deze chatkamer open
           selectRoom(roomName);
         });
 
@@ -204,7 +219,7 @@ app.get('/', (req, res) => {
           joinedRooms.forEach(room => {
             html += \`<div class="group-item" data-name="\${room}" onclick="selectRoom('\${room}')">
               <b># \${room}</b>
-              <span style="font-size:11px; color:#00a884;">actief</span>
+              <span style="font-size:11px; color:#00a884;">online</span>
             </div>\`;
           });
           document.getElementById('rooms-list').innerHTML = html;
@@ -226,16 +241,21 @@ app.get('/', (req, res) => {
 
         socket.on('chat-history', (messages) => {
           const container = document.getElementById('messages');
-          container.innerHTML = '';
-          messages.forEach(msg => {
-            const isSentByMe = msg.sender === myUsername;
-            container.innerHTML += \`
-              <div class="message \${isSentByMe ? 'sent' : 'received'}">
-                \${!isSentByMe ? \`<span class="sender">\${msg.sender}</span>\` : ''}
-                \${msg.text}
-              </div>
-            \`;
-          });
+          container.innerHTML = ''; // Maak leeg voor nieuwe kamer
+          
+          if(messages.length === 0) {
+            container.innerHTML = '<div style="text-align:center; color:#8696a0; margin-top:20px;">Begin het gesprek! Typ hieronder iets...</div>';
+          } else {
+            messages.forEach(msg => {
+              const isSentByMe = msg.sender === myUsername;
+              container.innerHTML += \`
+                <div class="message \${isSentByMe ? 'sent' : 'received'}">
+                  \${!isSentByMe ? \`<span class="sender">\${msg.sender}</span>\` : ''}
+                  \${msg.text}
+                </div>
+              \`;
+            });
+          }
           container.scrollTop = container.scrollHeight;
         });
 
@@ -251,7 +271,9 @@ app.get('/', (req, res) => {
   `);
 });
 
+// Server-side Realtime Verwerking
 io.on('connection', (socket) => {
+  
   socket.on('user-online', async (username) => {
     socket.username = username;
     await User.findOneAndUpdate({ username }, { isOnline: true }, { upsert: true });
@@ -262,8 +284,10 @@ io.on('connection', (socket) => {
   socket.on('create-group', async ({ name, pin }) => {
     const exists = await Group.findOne({ name });
     if (exists) return socket.emit('err', 'Groep bestaat al!');
+    
     const newGroup = new Group({ name, pin });
     await newGroup.save();
+    
     socket.join(name);
     socket.emit('group-joined', name);
   });
@@ -271,18 +295,22 @@ io.on('connection', (socket) => {
   socket.on('join-group', async ({ name, pin }) => {
     const group = await Group.findOne({ name, pin });
     if (!group) return socket.emit('err', 'Onjuiste groepsnaam of wachtwoord!');
+    
     socket.join(name);
     socket.emit('group-joined', name);
   });
 
   socket.on('get-messages', async (room) => {
+    // Haal alle oude berichten op uit MongoDB gesorteerd op tijd
     const history = await Message.find({ room }).sort({ timestamp: 1 });
     socket.emit('chat-history', history);
   });
 
   socket.on('send-message', async ({ room, sender, text }) => {
+    // Sla het bericht op in de database zodat latere joiners het zien
     const msg = new Message({ room, sender, text });
     await msg.save();
+    
     io.to(room).emit('receive-message', { room, sender, text });
   });
 
